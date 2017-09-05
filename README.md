@@ -9,10 +9,18 @@ It's a work in progress (meaning, it is not yet working).
 - h5py
 - matplotlib.pyplot
 
-## Some instructions
+## Download the package
 To get everything, use the following git command:
 ```
 git clone https://github.com/eost/pdlf_reloc.git
 ```
 or download the module directly from https://github.com/eost/pdlf_reloc.git
+
+## Compute time-delays
+Main script is dt_computation.py:
+```
+python dt_computation.py
+```
+Input parameters are indicated in Arguments.py
+
 
