@@ -1,5 +1,6 @@
 # pdlf_reloc
-A set of functions to compute time-delays and perform dd relocation
+A set of functions to compute time-delays and perform dd relocation.
+It's a work in progress meaning that it is not yet working.
 
 ## Dependencies
 - python3
