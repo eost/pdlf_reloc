@@ -55,12 +55,83 @@ def dt_time_correl(y1,y2,Istart,nw):
     Lmax = np.argmax(R)-(nw-1)
     Lmin = np.argmax(-R)-(nw-1)
 
-    # Get the energy of each signal
-    E1 = (y1**2).sum()
-    E2 = (y2**2).sum()
-    
     # All done
-    return(Rmax,Rmin,Lmax,Lmin,R,E1,E2)
+    return(Rmax,Rmin,Lmax,Lmin,R)
+
+def calcSNR(y1,y2,Istart,nw,fmin,fmax,delta,taper_alpha=0.2,smooth_length=8):
+    '''
+    Compute the signal to noise ratio
+
+    Parameters
+    ----------
+    y1, y2 : ndarray
+            Input signals. We assume they are synchronized, filtered accordingly and have the same sampling step.
+    Istart : int
+            The sample index at the beginning of the time-window.
+    nw : int
+            The length of the time-window in which the delay is computed.
+    fmin,fmax : float, float
+            Bounds of the frequency range use for fitting the phase.
+    delta : float
+            Sampling step of the input signals
+    taper_alpha : float
+            Shape parameter of the tukey taper window used before fourrier transform, 
+            representing the fraction of the window inside the cosine tapered region.
+    smooth_length : int
+            Number of samples over which fourrier spectra are smoothed
+    '''
+
+    # Find the minimum and maximum frequency bounds
+    freq = np.fft.fftfreq(nw, d=delta)
+    ifreq1=np.argmin(np.absolute(freq-fmin))
+    ifreq2=np.argmin(np.absolute(freq-fmax))
+
+    # Build the taper function
+    tw = signal.tukey(nw,taper_alpha)
+    
+    # Build the smoothing function of the spectra
+    th = signal.hann(smooth_length);
+    th = th/np.sum(th)
+    
+    # Taper the current seismograms around the P-wave arrival
+    y1=y1[Istart:Istart+nw]*tw
+    y2=y2[Istart:Istart+nw]*tw
+
+    # Compute the Fourier transform of the first event
+    y1_ft=np.fft.fft(y1)
+    # Compute the Fourier transform of the second event
+    y2_ft=np.fft.fft(y2)
+    # Compute the conjugate complex of the second event Fourier transform
+    y2_ft=np.conj(y2_ft)
+
+    # Compute the cross-spectra between event 1 and 2
+    Cxy = y1_ft*y2_ft
+    # Compute the Auto-spectra of event 1 (take the real part just in case it remains a small imaginary component.
+    Cxx = np.real(y1_ft*np.conj(y1_ft))
+    # Compute the Auto-spectra of event 2
+    Cyy = np.real(y2_ft*np.conj(y2_ft))
+    
+    # Smooth the spectra
+    Cxx = signal.filtfilt(th,1,Cxx)
+    Cxy = signal.filtfilt(th,1,Cxy)
+    Cyy = signal.filtfilt(th,1,Cyy)
+   
+    # Compute the coherence
+    Ixx=np.where(Cxx<0.0001) # Coherence diverges when Cxx=0 or Cyy=0, replace them with a small value
+    Iyy=np.where(Cyy<0.0001)
+    Cxx[Ixx]=0.0001
+    Cyy[Iyy]=0.0001
+    C=np.absolute(Cxy)/(np.sqrt(Cxx*Cyy)) # Coherency
+    C_mean = np.mean(C[ifreq1:ifreq2])
+
+    # Signal to noise ratio
+    I=np.where(C>0.99)
+    C[I]=0.99    
+    SNR = C**2 / (1. - C**2)
+    SNR_mean = np.mean(SNR[ifreq1:ifreq2])
+
+    # All done
+    return SNR_mean,C_mean
 
 
 def delay_cross_spectrum(y1,y2,Istart,nw,fmin,fmax,delta,taper_alpha=0.2,smooth_length=8,C_th=0.4):

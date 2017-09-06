@@ -87,7 +87,7 @@ for idx, ievent1 in enumerate(eventid):
                 # Vertical component: compute P-wave differential time
                 if(cmpnt=="Z"):
                     # Compute a first delay in the time domain
-                    (Rmax,Rmin,Lp,Lm,R,E1,E2) = dt_time_correl(y1_f,y2_f,40,nw)
+                    (Rmax,Rmin,Lp,Lm,R) = dt_time_correl(y1_f,y2_f,40,nw)
 
                     # Perform circular shift of the second trace (arf)
                     y2p = np.roll(y2_f,Lp)
@@ -114,7 +114,7 @@ for idx, ievent1 in enumerate(eventid):
                     dtps = dtps - 50
                     
                     # Compute a first delay in the time domain
-                    (Rmax,Rmin,Lp,Lm,R,E1,E2) = dt_time_correl(y1_f,y2_f,dtps.astype(int),nw)
+                    (Rmax,Rmin,Lp,Lm,R) = dt_time_correl(y1_f,y2_f,dtps.astype(int),nw)
                     
                     # Perform circular shift of the second trace (arf)
                     y2p = np.roll(y2_f,Lp)
