@@ -4,7 +4,8 @@ Simple functions to compute time-delays between seismic waveforms
 
 # Load modules
 import numpy as np
-from scipy import signal 
+from scipy import signal
+import matplotlib.pyplot as plt
 
 # 
 def dt_time_correl(y1,y2,Istart,nw):
@@ -149,12 +150,12 @@ def delay_cross_spectrum(y1,y2,Istart,nw,fmin,fmax,delta,taper_alpha=0.2,smooth_
     # Compute time-delay
     C_mean = np.mean(C[ifreq1:ifreq2])
     if C_mean > C_th:
-        (tau,s_tau) = solve_w_lin_lsq(w,freq,phi,ifreq1,ifreq2)
-        tau   = tau/(2*np.pi) 
-        s_tau = s_tau/(2*np.pi)
+        (tau,s_tau,b) = solve_w_lin_lsq(w,freq,phi,ifreq1,ifreq2)
+        tau   /= (2*np.pi)
+        s_tau /= (2*np.pi)
     else:
         tau   = None
-        s_tau = None       
+        s_tau = None
 
     # All done
     return (tau,s_tau,C_mean)
@@ -179,4 +180,4 @@ def solve_w_lin_lsq(w,x,y,i1,i2):
     s_a = 1/np.sqrt((B-(C*C)/A))
 
     # All done
-    return(a,s_a)
+    return(a,s_a,b)

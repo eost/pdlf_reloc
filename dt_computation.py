@@ -1,10 +1,9 @@
 '''
-Computation of time-delays
+Time-delay calculation
 '''
 
 # Import Python modules
 import numpy as np  
-#import numpy.matlib 
 import matplotlib.pyplot as plt  
 from scipy import signal 
 import os,sys,h5py 
@@ -120,7 +119,7 @@ for idx, ievent1 in enumerate(eventid):
                     # Perform circular shift of the second trace (arf)
                     y2p = np.roll(y2_f,Lp)
                     y2m = np.roll(y2_f,Lm)
-                    
+
                     # Subsample delay from the phase of the cross-spectrum
                     (taup,s_taup,C_taup) = delay_cross_spectrum(y1_f,y2p,dtps.astype(int),nw,fmin,fmax,dt,taper_alpha,smooth_length)
                     (taum,s_taum,C_taum) = delay_cross_spectrum(y1_f,y2m,dtps.astype(int),nw,fmin,fmax,dt,taper_alpha,smooth_length)
