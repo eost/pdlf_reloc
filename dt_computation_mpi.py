@@ -143,6 +143,7 @@ def boss(comm,TagIn,TagOut):
             for o in dataRECV['delays']:
                 s_out = '%4d %4d %6s %6.1f %6.1f %9.2f %9.2f\n'%(o[0],o[1],o[2],o[3]*100.,o[4]*100.,o[5]*1000.,o[6]*1000.)
                 fid.write(s_out)
+                fid.flush()
         else: # Worker is initialized
             log.write('Worker %i initialized'%(wRank))
             
