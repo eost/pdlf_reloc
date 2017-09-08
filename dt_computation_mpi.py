@@ -129,7 +129,7 @@ def boss(comm,TagIn,TagOut):
             ev_pairs.append([ievent1,ievent2,hdf5filename1,hdf5filename2])
 
     # Compute delays until we are done
-    fid  = open('dt_cluster_ef_test.txt', 'wt') # Output file including delays
+    fid  = open('dt_cluster_ef_cc.txt', 'wt') # Output file including delays
     log  = LogFile('status.log')
     while list(ActiveWorkers.values()).count(True) > 0:
         
@@ -173,13 +173,8 @@ def boss(comm,TagIn,TagOut):
     # Log file
     Logger = LogFile('status.log')
     Logger.clearFile()
-
-    
-
     
     
-
-
 
 
 def dt_computation_main(TagBoss2Worker = 1979, TagWorker2Boss = 28):

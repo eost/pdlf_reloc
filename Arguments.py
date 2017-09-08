@@ -6,6 +6,9 @@ idir="./east_flank/hdf5"
 ns = 512   # Number of samples
 dt = 0.01  # Sampling step
 
+# Data interpolation to compute delays
+interp_factor = 10
+
 # Data windowing
 nw    = 128  # Window size
 gamma = 1.73 # Vp/Vs ratio
