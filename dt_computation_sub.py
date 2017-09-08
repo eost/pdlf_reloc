@@ -10,6 +10,34 @@ import os,h5py
 def compute_delay(ievent1,ievent2,hdf5filename1,hdf5filename2,npts,dt,fmin,fmax,nw,gamma=1.73,taper_alpha=0.2,interp_factor=1,R_th=0.5):
     '''
     Compute time-delays from hdf5 files
+
+    Parameters
+    ----------
+    ievent1 : int
+            ID of the first event
+    ievent2 : int
+            ID of the second event
+    hdf5filename1 : str
+            HDF5 filename for the first event
+    hdf5filename2 : str
+            HDF5 filename for the second event
+    npts : int
+            number of samples in the seismograms
+    dt : float
+            sampling step
+    fmin, fmax : float, float
+            Filter corner frequencies
+    nw : int
+            Window size in samples
+    gamma : float, default: 1.73
+            Vp/Vs ratio
+    taper_alpha : float, default: 0.2
+            Taper width (fraction of the window size, also used to taper the overall seismogram)
+    interp_factor : int
+            Data interpolation factor to compute delays. i.e., the ratio of output rate / input rate
+    R_th : float
+            Correlation threashold
+
     '''
 
     # Waveform tapering window
@@ -65,7 +93,7 @@ def compute_delay(ievent1,ievent2,hdf5filename1,hdf5filename2,npts,dt,fmin,fmax,
                 tp2= float(h2[path0].attrs['TP'])
                     
                 # Time interval between P and S wave
-                # (Should be improved such that each event has his S time defined not necessarily the same for both events)
+                 # (Should be improved such that each event has his S time defined not necessarily the same for both events)
                 dtps =  np.round(((tp1+tp2)/2. * (gamma - 1))*1./dt)
                     
                 # S-wave arrival time (in samples)s
@@ -96,7 +124,7 @@ def compute_delay(ievent1,ievent2,hdf5filename1,hdf5filename2,npts,dt,fmin,fmax,
     return out
 
 
-def dt_time_correl(y1,y2,Istart,nw,taper_alpha=None,interp_factor=1):
+def dt_time_correl(y1,y2,Istart,nw,taper_alpha=None,interp_factor=1,interp_Rtol=0.75):
     '''
     Compute time-delay in the time domain.
 
@@ -111,10 +139,13 @@ def dt_time_correl(y1,y2,Istart,nw,taper_alpha=None,interp_factor=1):
     taper_alpha : float,o optional
             Shape parameter of the tukey taper window used before fourrier transform, 
             representing the fraction of the window inside the cosine tapered region.
-    interp_factor : int
+    interp_factor : int, default=1 (no interpolation)
             Interpolation factor. i.e., the ratio of output rate / input rate
             (must be >= 1)
-
+    interp_Rtol : float, default=0.75
+            Will perform interpolation only for points with correlation coefficient
+            - larger than Rmax*interp_Rtol
+            - smaller than Rmin*interp_Rtol
     Returns
     -------
     Rmax,Rmin,Lmax,Lmin : float, float, float, float
@@ -123,7 +154,7 @@ def dt_time_correl(y1,y2,Istart,nw,taper_alpha=None,interp_factor=1):
             original sampling rate). Lmax and Lmin are not necessary integers if interp_factor 
             is larger than 1.
     '''
-
+    
     # Check if interp_factor is an integer
     assert type(interp_factor)==int, 'interp_factor must be an integer'
     assert interp_factor>=1, 'interp_factor must be >=1'
@@ -138,22 +169,9 @@ def dt_time_correl(y1,y2,Istart,nw,taper_alpha=None,interp_factor=1):
     y1 = y1[Istart:Istart+nw]*tw
     y2 = y2[Istart:Istart+nw]*tw
 
-    # Interpolation
-    if interp_factor != 1: # Interpolation
-        ti = np.arange(nw)
-        to = np.arange(interp_factor*nw)/float(interp_factor)
-        y1i = np.zeros((interp_factor*nw,))
-        y2i = np.zeros((interp_factor*nw,))
-        for i in range(interp_factor*nw):
-            y1i[i] = np.dot(y1,np.sinc((to[i]-ti)))
-            y2i[i] = np.dot(y2,np.sinc((to[i]-ti)))
-    else: # No interpolation
-        y1i = y1
-        y2i = y2        
-
     # Normalization
-    y1_sigma = np.std(y1i)
-    y2_sigma = np.std(y2i)
+    y1_sigma = np.std(y1)
+    y2_sigma = np.std(y2)
     if y1_sigma > 0.:
         f1 = 1./y1_sigma
     else:
@@ -162,22 +180,43 @@ def dt_time_correl(y1,y2,Istart,nw,taper_alpha=None,interp_factor=1):
         f2 = 1./y2_sigma
     else:
         f2 = 0.
-    y1i = (y1i - np.mean(y1i))*f1/float(len(y1i))
-    y2i = (y2i - np.mean(y2i))*f2
+    y1 = (y1 - np.mean(y1))*f1/float(len(y1))
+    y2 = (y2 - np.mean(y2))*f2
     
     # Compute the normazlized correlation
-    R=np.correlate(y1i,y2i,'full')
+    R=np.correlate(y1,y2,'full')    
 
     # Get the maximum and minimum of the cross correlation function
     Rmax = np.amax(R)
     Rmin = np.amin(R)
-    
-    # Get the delays associated with max and min (in samples)
-    Lmax = float(np.argmax(R)-(nw*interp_factor-1))/float(interp_factor)
-    Lmin = float(np.argmin(R)-(nw*interp_factor-1))/float(interp_factor)
 
+    # Get the delays associated with max and min (in samples)
+    Lmax = np.argmax(R)-(nw-1)
+    Lmin = np.argmin(R)-(nw-1)
+        
+    # Interpolation (optional)
+    if interp_factor > 1: 
+        # Original time
+        ti = (np.arange(R.size) - (nw-1))
+        # Find points smaller than of Rmin*interp_Rtol and larger than Rmax*interp_Rtol
+        nt = 1./float(interp_factor)
+        imax = ti[np.where( (R>=Rmax*interp_Rtol) | (R<=Rmin*interp_Rtol) )[0]]
+        to = np.array([])
+        for i in imax:            
+            to = np.append(to,np.arange(i-1,i+1+nt,nt))
+        # Get interpolated lag and R values
+        for i in range(to.size):
+            r = np.dot(R,np.sinc((to[i]-ti)))                        
+            if r > Rmax:
+                Rmax = r
+                Lmax = to[i]
+            elif r < Rmin:
+                Rmin = r
+                Lmin = to[i]
+            
     # All done
     return(Rmax,Rmin,Lmax,Lmin)
+
 
 
 def calcSNR(y1,y2,Istart,nw,fmin,fmax,delta,taper_alpha=0.2,smooth_length=8):
