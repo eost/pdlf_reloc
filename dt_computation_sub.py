@@ -116,8 +116,8 @@ def compute_delay(ievent1,ievent2,hdf5filename1,hdf5filename2,npts,dt,fmin,fmax,
             Lm = -Lm*dt + tp2-tp1
 
             # Append output
-            evid1 = os.path.basename(hdf5filename1).strip('.hdf5')
-            evid2 = os.path.basename(hdf5filename2).strip('.hdf5')
+            evid1 = os.path.basename(hdf5filename1)[:-5]
+            evid2 = os.path.basename(hdf5filename2)[:-5]
             out.append([ievent1,ievent2,evid1,evid2,sta,Rmax,Rmin,Lp,Lm])
     h1.close()
     h2.close()
