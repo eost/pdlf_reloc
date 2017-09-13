@@ -106,8 +106,8 @@ def compute_delay(ievent1,ievent2,hdf5filename1,hdf5filename2,npts,dt,fmin,fmax,
                 (Rmax,Rmin,Lp,Lm) = dt_time_correl(y1_f,y2_f,dtps.astype(int),nw,taper_alpha,interp_factor)
                     
             # Check if we can compute a delay                
-            if Rmin < R_th and Rmax < R_th:
-                continue
+            ##if Rmin < R_th and Rmax < R_th:
+            ##    continue
             
             # Total delay
             tp1=h1[path0].attrs['TP'] # P travel time for the 1st event
@@ -116,7 +116,9 @@ def compute_delay(ievent1,ievent2,hdf5filename1,hdf5filename2,npts,dt,fmin,fmax,
             Lm = -Lm*dt + tp2-tp1
 
             # Append output
-            out.append([ievent1,ievent2,sta,Rmax,Rmin,Lp,Lm])
+            evid1 = os.path.basename(hdf5filename1).strip('.hdf5')
+            evid2 = os.path.basename(hdf5filename2).strip('.hdf5')
+            out.append([ievent1,ievent2,evid1,evid2,sta,Rmax,Rmin,Lp,Lm])
     h1.close()
     h2.close()
 

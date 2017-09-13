@@ -114,7 +114,7 @@ def boss(comm,TagIn,TagOut):
         eventid = np.arange(nevent)
 
     # Index mapping
-    fid = open('id_map_test.txt','wt')
+    fid = open('id_map_cc.txt','wt')
     for idx, ievent1 in enumerate(eventid):
         hdf5filename1 = os.path.join(idir,H[ievent1])
         fid.write('%-5d %s\n'%(ievent1,hdf5filename1))
@@ -141,7 +141,7 @@ def boss(comm,TagIn,TagOut):
         if 'delays' in dataRECV: # Receiving results
             log.write('received results from Worker %i'%(wRank))
             for o in dataRECV['delays']:
-                s_out = '%4d %4d %6s %6.1f %6.1f %9.2f %9.2f\n'%(o[0],o[1],o[2],o[3]*100.,o[4]*100.,o[5]*1000.,o[6]*1000.)
+                s_out = '%4d %4d %20s %20s %7s %7.1f %7.1f %10.2f %10.2f\n'%(o[0],o[1],o[2],o[3],o[4],o[5]*100.,o[6]*100.,o[7]*1000.,o[8]*1000.)
                 fid.write(s_out)
                 fid.flush()
         else: # Worker is initialized
@@ -167,14 +167,6 @@ def boss(comm,TagIn,TagOut):
     
     # All done
     return
-
-        
-    
-    # Log file
-    Logger = LogFile('status.log')
-    Logger.clearFile()
-    
-    
 
 
 def dt_computation_main(TagBoss2Worker = 1979, TagWorker2Boss = 28):
