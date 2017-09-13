@@ -17,17 +17,20 @@ git clone https://github.com/eost/pdlf_reloc.git
 or download the module directly from https://github.com/eost/pdlf_reloc.git
 
 ## Compute time-delays
-Main script is dt_computation_mpi.py (delay calculation on multiple CPUs)
+Input parameters are indicated in Arguments.py
+
+There are two possibilities to compute delays:
+
+1/ Use an MPI version of the script to compute time-delays on multiple CPUs:
 ```
 mpiexec -n NPROC python dt_computation_mpi.py
 ```
-where NPROC is the number of CPUs that will be used to compute delays (should be at least 2)
-A sequential version is also available:
-```
-mpiexec -n NPROC python dt_computation_cc.py
-```
+where NPROC is the number of CPUs that will be used to compute delays (should be at least 2: 1 process for the boss and at least 1 worker).
 
-Input parameters are indicated in Arguments.py
+2/ Use a sequential version of the script to compute time-delays:
+```
+python dt_computation_cc.py
+```
 
 
 
