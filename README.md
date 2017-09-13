@@ -19,7 +19,7 @@ or download the module directly from https://github.com/eost/pdlf_reloc.git
 ## Compute time-delays
 Input parameters are indicated in Arguments.py
 
-There are two possibilities to compute delays:
+There are two possibilities to compute time-delays:
 
 1/ Use an MPI version of the script to compute time-delays on multiple CPUs:
 ```
