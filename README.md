@@ -3,7 +3,7 @@ A set of functions to compute time-delays and perform dd relocation.
 It's a work in progress (meaning, it is not yet working).
 
 ## Dependencies
-- python3
+- python3 (not tested on python2 but should work)
 - numpy
 - scipy.signal
 - h5py
