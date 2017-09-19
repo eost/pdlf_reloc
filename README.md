@@ -4,7 +4,7 @@ It's a work in progress (meaning, it is not yet working).
 
 ## Dependencies
 - python3 (not tested on python2 but should work)
-- openmpi (if needed)
+- A functional MPI 1.x/2.x/3.x implementation like OpenMPI or MPICH built with shared/dynamic libraries
 
 Python modules:
 - numpy
