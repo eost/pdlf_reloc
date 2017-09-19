@@ -4,10 +4,14 @@ It's a work in progress (meaning, it is not yet working).
 
 ## Dependencies
 - python3 (not tested on python2 but should work)
+- openmpi (if needed)
+
+Python modules:
 - numpy
 - scipy.signal
 - h5py
 - matplotlib.pyplot
+- pyproj
 
 ## Download the package
 To get everything, use the following git command:
@@ -38,6 +42,11 @@ where NPROC is the number of CPUs that will be used to compute delays (should be
 python dt_computation_cc.py
 ```
 
+## DD reloc
+Use:
+```
+python ddreloc.py
+```
 
 
 
