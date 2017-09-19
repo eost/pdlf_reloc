@@ -23,7 +23,7 @@ or download the module directly from https://github.com/eost/pdlf_reloc.git
 ## Define clusters
 First compute the correlation matrix using
 ```
-mpiexec -n NPROC python dt_computation_mpi.py
+mpiexec -n NPROC python cc_matrix.py
 ```
 where NPROC is the number of CPUs that will be used to compute correlation coeffixients (should be at least 2: 1 process for the boss and at least 1 worker).
 
