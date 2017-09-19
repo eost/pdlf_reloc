@@ -16,6 +16,12 @@ git clone https://github.com/eost/pdlf_reloc.git
 ```
 or download the module directly from https://github.com/eost/pdlf_reloc.git
 
+## Define clusters
+Use
+```
+python define_clusters.py
+```
+
 ## Compute time-delays
 Input parameters are indicated in Arguments.py
 
@@ -31,6 +37,7 @@ where NPROC is the number of CPUs that will be used to compute delays (should be
 ```
 python dt_computation_cc.py
 ```
+
 
 
 
