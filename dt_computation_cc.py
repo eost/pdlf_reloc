@@ -15,8 +15,9 @@ from dt_computation_sub import *
 # Get input parameters
 from Arguments import *
 
-# Get the list of hdf5 filenames
+# Get the list of hdf5 filenames and sort them because system dependent sort
 ifiles=os.listdir(idir)
+ifiles.sort()
 H = []
 for ifile in ifiles:
     if ifile.endswith('.hdf5'): # Make sure it is an hdf5 file

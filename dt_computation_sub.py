@@ -83,6 +83,7 @@ def compute_delay(ievent1,ievent2,hdf5filename1,hdf5filename2,npts,dt,fmin,fmax,
 
             # Vertical component: compute P-wave differential time
             if(cmpnt=="Z"):
+                
                 # Compute a first delay in the time domain
                 (Rmax,Rmin,Lp,Lm) = dt_time_correl(y1_f,y2_f,40,nw,taper_alpha,interp_factor)                    
 
@@ -106,8 +107,8 @@ def compute_delay(ievent1,ievent2,hdf5filename1,hdf5filename2,npts,dt,fmin,fmax,
                 (Rmax,Rmin,Lp,Lm) = dt_time_correl(y1_f,y2_f,dtps.astype(int),nw,taper_alpha,interp_factor)
                     
             # Check if we can compute a delay                
-            ##if Rmin < R_th and Rmax < R_th:
-            ##    continue
+            if Rmin < R_th and Rmax < R_th:
+                continue
             
             # Total delay
             tp1=h1[path0].attrs['TP'] # P travel time for the 1st event
@@ -156,6 +157,10 @@ def dt_time_correl(y1,y2,Istart,nw,taper_alpha=None,interp_factor=1,interp_Rtol=
             original sampling rate). Lmax and Lmin are not necessary integers if interp_factor 
             is larger than 1.
     '''
+
+    # Build the apriori function
+    LL = np.linspace(-(nw-1),(nw-1) ,2*(nw)-1)
+    Rprior = 1./(1+np.power((LL/20),2))
     
     # Check if interp_factor is an integer
     assert type(interp_factor)==int, 'interp_factor must be an integer'
@@ -186,8 +191,10 @@ def dt_time_correl(y1,y2,Istart,nw,taper_alpha=None,interp_factor=1,interp_Rtol=
     y2 = (y2 - np.mean(y2))*f2
     
     # Compute the normazlized correlation
-    R=np.correlate(y1,y2,'full')    
-
+    R=np.correlate(y1,y2,'full')
+    # Multiply by a prior
+    R = R * Rprior
+    
     # Get the maximum and minimum of the cross correlation function
     Rmax = np.amax(R)
     Rmin = np.amin(R)
