@@ -12,9 +12,9 @@ from scipy.sparse import linalg
 # Need to check everywhere this stupid python convention where the first element in an array is 0 and not 1. # YOU ARE STUPID
 # Make a structure containing 125 elements - with 3 fields containing 38 elements each
 
-data_file = 'dt_cluster_ef_cc_c1.txt'
+data_file = 'dt_cluster_ef_cc.txt'
 gmtxy_file = 'meca_az.gmtxy'
-corr_th    = 0.4 # Correlation threshold
+corr_th    = 0.5 # Correlation threshold
 
 class event(object):
     '''
@@ -51,8 +51,22 @@ class event(object):
         self.azm.append(azm)
         self.toa.append(toa)
 
-        
 
+
+
+####################################################################
+# Patch to correct nevent is the actual number of events in the cluster
+# and not the total number of events in the meca file
+f=open(data_file,'r')
+eventids = []
+for l in f:
+    items = l.strip().split()
+    if items[2] not in eventids:
+         eventids.append(items[2])
+    if items[3] not in eventids:
+         eventids.append(items[3])
+##
+f.close()
 
 # Fill-out the event dictionary (replaces STA)
 events = {}
@@ -84,14 +98,15 @@ for line in f:
     station = items[5]
 
     # Check if this event is already in the dictionary
-    if evid not in events:
-        events[evid] = event(index=nevent)
-        event_idx_map.append(evid)
-        nevent += 1
+    if evid in eventids:
+        if evid not in events:
+            events[evid] = event(index=nevent)
+            event_idx_map.append(evid)
+            nevent += 1
 
-    # Fill-out the Event dictionary
-    events[evid].addsta(station,azimuth,ic)
-    ndata += 1
+        # Fill-out the Event dictionary
+        events[evid].addsta(station,azimuth,ic)
+        ndata += 1
 
 f.close()
 
@@ -124,17 +139,24 @@ for line in f:
     ev2 = items[3]
 
     # Correlation coefficient
-    R = float(items[5])/100.
-    #if R < corr_th:
-    #    print('Skipping station %s for event pair %s %s (Correlation coefficient = %.2f)'%(sta,ev1,ev2,R))
-    #    continue
+    R1 = float(items[5])/100.
+    R2 = -float(items[6])/100.
+    R = np.amax(R1,R2)
+    Rs =  np.argmax((R1,R2))
+    
+    if R < corr_th:
+        print('Skipping station %s for event pair %s %s (Correlation coefficient = %.2f)'%(sta,ev1,ev2,R))
+        continue
     
     # Read the delay (ms)
     dt =  float(items[7])/1000.
+    #if(Rs == 1):
+    #     dt =  float(items[8])/1000.
 
     # Read the uncertainty
     #s_dt = float(items[9])/1000.
-    s_dt = (100-R*100.)/100 # An alternative?
+    #s_dt = (100-R*100.)/1000 # An alternative?
+    s_dt = ((1.-R)/R)*0.01
 
     # check if ev1 and ev2 exists in the event dictionary
     if ev1 not in events:
@@ -164,10 +186,6 @@ for line in f:
         azm2 = events[ev2].azm[index2]
         toa2 = events[ev2].toa[index2]
 
-        # We consider the average (to be improved
-        azm = (azm1 + azm2)/2.
-        toa = (toa1 + toa2)/2.
-
         # Select the corresponding wave velocity
         if(sta[-1] == 'Z'): # P-wave velocity for horizontal channels
             c = Vp   
@@ -175,9 +193,14 @@ for line in f:
             c = Vs
 
         # Compute the ray parameters
-        A = np.sin(np.deg2rad(azm)) * np.sin(np.deg2rad(toa)) / c
-        B = np.cos(np.deg2rad(azm)) * np.sin(np.deg2rad(toa)) / c
-        C = np.cos(np.deg2rad(toa)) / c
+        A1 = np.sin(np.deg2rad(azm1)) * np.sin(np.deg2rad(toa1)) / c
+        B1 = np.cos(np.deg2rad(azm1)) * np.sin(np.deg2rad(toa1)) / c
+        C1 = np.cos(np.deg2rad(toa1)) / c
+
+        A2 = np.sin(np.deg2rad(azm2)) * np.sin(np.deg2rad(toa2)) / c
+        B2 = np.cos(np.deg2rad(azm2)) * np.sin(np.deg2rad(toa2)) / c
+        C2 = np.cos(np.deg2rad(toa2)) / c
+        
 
         # Fill the data vector
         d[data_idx,0]  = dt
@@ -187,14 +210,14 @@ for line in f:
         #Cdinv[data_idx,data_idx] = 1./(np.power(s_dt,2))
         
         # Fill the Jacobian matrix
-        G[data_idx,events[ev1].idx*4+0] = -A
-        G[data_idx,events[ev1].idx*4+1] = -B
-        G[data_idx,events[ev1].idx*4+2] = -C
+        G[data_idx,events[ev1].idx*4+0] = -A1
+        G[data_idx,events[ev1].idx*4+1] = -B1
+        G[data_idx,events[ev1].idx*4+2] = -C1
         G[data_idx,events[ev1].idx*4+3] = -1.
 
-        G[data_idx,events[ev2].idx*4+0] = A
-        G[data_idx,events[ev2].idx*4+1] = B
-        G[data_idx,events[ev2].idx*4+2] = C
+        G[data_idx,events[ev2].idx*4+0] = A2
+        G[data_idx,events[ev2].idx*4+1] = B2
+        G[data_idx,events[ev2].idx*4+2] = C2
         G[data_idx,events[ev2].idx*4+3] = 1.
 
         # Increment data index
@@ -214,6 +237,7 @@ nd = len(d)
 sd_inv = sd_inv[~I]
 d2 = d*sd_inv
 G2 = G*sd_inv
+
 
 iid = np.linspace(0,nd,nd+1)
 print(nd)
@@ -242,9 +266,9 @@ zorg = np.array(zorg)
 string = '+proj=utm +lat_0={} +lon_0={} +ellps={}'.format(lats.mean(), lons.mean(), 'WGS84')
 putm   = pp.Proj(string)
 xorg,yorg = putm(lons,lats)
-xorg -= xorg.mean()
-yorg -= yorg.mean()
-zorg -= zorg.mean()
+#xorg -= xorg.mean()
+#yorg -= yorg.mean()
+#zorg -= zorg.mean()
 
 print('MEAN AND STD (original location)')
 print(xorg.mean(),xorg.std())
@@ -262,23 +286,33 @@ print(zorg.mean(),zorg.std())
 # diagonal matrix CM).
       
 # Assign the a priori uncertainties (from the standard deviation of the original location)
-sigma_m = np.array([xorg.std(),yorg.std(),zorg.std(),0.1]*nevent)
+sigma_m = np.array([xorg.std(),yorg.std(),zorg.std(),0.5]*nevent)
 Cminv = np.diag(1./np.power(sigma_m,2)) # Both in meters and seconds (not very good)
 
-# Set low uncertainties to all the parameters of the 1st event
-Cminv[0,0]=1e9 
-Cminv[1,1]=1e9
-Cminv[2,2]=1e9
-Cminv[3,3]=1e12
+
+# Build the apriori parameters vector (assign the original location)
+
+xprior = np.zeros((4*nevent,1))
+xprior[0::4,0]=xorg
+xprior[1::4,0]=yorg
+xprior[2::4,0]=zorg
+
+# Go back to lat lon to compute new rays
+lon,lat = putm(xorg,yorg,inverse=True)
+# EQSRCE 2012121815023440 LATLON -021.25480 0055.76090 0002.61000 0
+# EQSRCE eventid LATLON lat lon zorg/1000
+s_out = 'EQSRCE %s LATLON %f %f %f 0 \n'%(eventids[], lat, lon, zorg/1000.)
 
 # Resolve the inverse problem
 b = G2.T.dot(G2)+Cminv
-B = G2.T.dot(d2)
+B = G2.T.dot(d2)+Cminv.dot(xprior)
 x,resid,rank,s = np.linalg.lstsq(b,B)
 res = np.abs(d -  G.dot(x))
 res = res.flatten()
 res_median = np.median(res)
 #print(res_median*1000,np.mean(np.abs(res))*1000,nd)
+
+
 
 # We will iterate and remove and each time step the data with the highest msifit
 #screening = [5.,3.,1.5,0.9,0.8]
@@ -304,7 +338,7 @@ for iter in range(5):
     nd = len(d)    
     iid = np.asarray(iid[I])        
     b = G2.T.dot(G2)+Cminv
-    B = G2.T.dot(d2)
+    B = G2.T.dot(d2)+Cminv.dot(xprior)
     x,resid,rank,s = np.linalg.lstsq(b,B)
     
 print(res_median*1000,np.mean(np.abs(res))*1000,nd)
@@ -358,6 +392,8 @@ print(res_median*1000,np.mean(np.abs(res))*1000,nd)
     
 # At the last iteration
 # Get the associated uncertainties and save them
+res = np.abs(d -  G.dot(x))
+res = res.flatten()    
 s_m = np.linalg.inv(G2.T.dot(G2)+Cminv)
 s_m = np.sqrt(np.diag(s_m))
 s_m2=np.reshape(s_m,(nevent,4))
@@ -374,14 +410,19 @@ plt.plot(G.dot(x),'xr')
 # Plot locations
 plt.figure()
 
-plt.subplot(211)
+plt.subplot(311)
 plt.plot(xorg,yorg,'x')
 plt.plot(x2[:,0]-x2[:,0].mean(),x2[:,1]-x2[:,1].mean(),'o')
 plt.axis('equal')
 
-plt.subplot(212)
+plt.subplot(312)
 plt.plot(xorg,zorg,'x')
 plt.plot(x2[:,0]-x2[:,0].mean(),x2[:,2]-x2[:,2].mean(),'o')
+plt.axis('equal')
+
+plt.subplot(313)
+plt.plot(yorg,zorg,'x')
+plt.plot(x2[:,1]-x2[:,1].mean(),x2[:,2]-x2[:,2].mean(),'o')
 plt.axis('equal')
 plt.show()
 
